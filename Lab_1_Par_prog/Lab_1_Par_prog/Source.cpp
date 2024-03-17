@@ -2,70 +2,109 @@
 #include <fstream>
 #include <vector>
 #include <chrono>
+#include <random>
+#include <stdexcept>
 
-void matrixMultiply(const std::vector<std::vector<int>>& A, const std::vector<std::vector<int>>& B, std::vector<std::vector<int>>& result) {
-    int m = A.size();
-    int n = A[0].size();
-    int p = B[0].size();
+std::vector<std::vector<int>> generateRandomMatrix(int rows, int cols) {
+    std::vector<std::vector<int>> matrix(rows, std::vector<int>(cols));
 
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < p; ++j) {
-            result[i][j] = 0;
-            for (int k = 0; k < n; ++k) {
-                result[i][j] += A[i][k] * B[k][j];
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, 100);
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            matrix[i][j] = dis(gen);
+        }
+    }
+
+    return matrix;
+}
+
+std::vector<std::vector<int>> readMatrix(const std::string& filename, int& rows, int& cols) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Не удалось открыть файл.");
+    }
+
+    file >> rows >> cols;
+    std::vector<std::vector<int>> matrix(rows, std::vector<int>(cols));
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            file >> matrix[i][j];
+        }
+    }
+
+    file.close();
+    return matrix;
+}
+
+void writeMatrix(const std::vector<std::vector<int>>& matrix, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Не удалось открыть файл для записи.");
+    }
+
+    file << matrix.size() << " " << matrix[0].size() << std::endl;
+
+    for (const auto& row : matrix) {
+        for (const int& val : row) {
+            file << val << " ";
+        }
+        file << std::endl;
+    }
+
+    file.close();
+}
+
+std::vector<std::vector<int>> multiplyMatrices(const std::vector<std::vector<int>>& matrix1, const std::vector<std::vector<int>>& matrix2) {
+    int rowsA = matrix1.size();
+    int colsA = matrix1[0].size();
+    int rowsB = matrix2.size(); 
+    int colsB = matrix2[0].size();
+
+    if (colsA != rowsB) {
+        throw std::runtime_error("Incorrect matrix sizes for multiplication.");
+    }
+
+    std::vector<std::vector<int>> result(rowsA, std::vector<int>(colsB, 0));
+
+    for (int i = 0; i < rowsA; ++i) {
+        for (int j = 0; j < colsB; ++j) {
+            for (int k = 0; k < colsA; ++k) {
+                result[i][j] += matrix1[i][k] * matrix2[k][j];
             }
         }
     }
+
+    return result;
 }
 
+
 int main() {
-    // Чтение значений матриц из файлов
-    std::ifstream file1("E:\\Projectы\\Lab_1_Par_prog\\matrix1.txt");
-    std::ifstream file2("E:\\Projectы\\Lab_1_Par_prog\\matrix2.txt");
+    int rows1 = 2;
+    int cols1 = 3;
+    int rows2 = 3; 
+    int cols2 = 2; 
 
-    int m, n, p;
-    file1 >> m >> n;
-    file2 >> n >> p;
+    auto start = std::chrono::high_resolution_clock::now();
 
-    std::vector<std::vector<int>> A(m, std::vector<int>(n));
-    std::vector<std::vector<int>> B(n, std::vector<int>(p));
-    std::vector<std::vector<int>> result(m, std::vector<int>(p));
+    std::vector<std::vector<int>> matrix1 = generateRandomMatrix(rows1, cols1);
+    std::vector<std::vector<int>> matrix2 = generateRandomMatrix(rows2, cols2);
 
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < n; ++j) {
-            file1 >> A[i][j];
-        }
-    }
+    writeMatrix(matrix1, "E:\\Projectы\\Lab_1_Par_prog\\matrix1.txt");
+    writeMatrix(matrix2, "E:\\Projectы\\Lab_1_Par_prog\\matrix2.txt");
 
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < p; ++j) {
-            file2 >> B[i][j];
-        }
-    }
+    std::vector<std::vector<int>> result = multiplyMatrices(matrix1, matrix2);
 
-    // Перемножение матриц
-    auto start = std::chrono::steady_clock::now();
-    matrixMultiply(A, B, result);
-    auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
+    writeMatrix(result, "E:\\Projectы\\Lab_1_Par_prog\\result_matrix.txt");
 
-    // Запись результата в файл
-    std::ofstream file_result("E:\\Projectы\\Lab_1_Par_prog\\result_matrix.txt");
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < p; ++j) {
-            file_result << result[i][j] << " ";
-        }
-        file_result << "\n";
-    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
 
-    // Вывод времени выполнения и объема задачи
-    std::cout << "Time taken: " << elapsed_seconds.count() << "s\n";
-    std::cout << "Task size: " << m << "x" << n << " and " << n << "x" << p << std::endl;
-    file_result << "Time taken: " << elapsed_seconds.count() << "s\n";;
-    file_result << "Task size: " << m << "x" << n << " and " << n << "x" << p << std::endl;
-    // Завершение программы
-    file1.close();
-    file2.close();
-    file_result.close();
+    std::cout << "The scope of the task: " << rows1 * cols1 + rows2 * cols2 << " elements." << std::endl;
+    std::cout << "Execution time: " << duration.count() << " seconds." << std::endl;
+
     return 0;
 }
