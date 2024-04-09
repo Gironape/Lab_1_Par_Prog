@@ -58,14 +58,15 @@ void writeMatrix(const std::vector<std::vector<int>>& matrix, const std::string&
     file.close();
 }
 
-std::vector<std::vector<int>> multiplyMatrices(const std::vector<std::vector<int>>& matrix1, const std::vector<std::vector<int>>& matrix2) {
-    int rowsA = matrix1.size();
-    int colsA = matrix1[0].size();
-    int rowsB = matrix2.size(); 
-    int colsB = matrix2[0].size();
+std::vector<std::vector<int>> multiplyMatricesFromFile(const std::string& file1, const std::string& file2) {
+    int rowsA, colsA, rowsB, colsB;
+
+    std::vector<std::vector<int>> matrix1 = readMatrix(file1, rowsA, colsA);
+
+    std::vector<std::vector<int>> matrix2 = readMatrix(file2, rowsB, colsB);
 
     if (colsA != rowsB) {
-        throw std::runtime_error("Incorrect matrix sizes for multiplication.");
+        throw std::runtime_error("Некорректные размеры матриц для умножения.");
     }
 
     std::vector<std::vector<int>> result(rowsA, std::vector<int>(colsB, 0));
@@ -82,29 +83,26 @@ std::vector<std::vector<int>> multiplyMatrices(const std::vector<std::vector<int
 }
 
 
+
 int main() {
-    int rows1 = 2;
-    int cols1 = 3;
-    int rows2 = 3; 
-    int cols2 = 2; 
-
-    auto start = std::chrono::high_resolution_clock::now();
-
+    const int rows1 = 10;
+    const int cols1 = 10;
+    const int rows2 = 10;
+    const int cols2 = 10;
     std::vector<std::vector<int>> matrix1 = generateRandomMatrix(rows1, cols1);
     std::vector<std::vector<int>> matrix2 = generateRandomMatrix(rows2, cols2);
 
-    writeMatrix(matrix1, "E:\\Projectы\\Lab_1_Par_prog\\matrix1.txt");
-    writeMatrix(matrix2, "E:\\Projectы\\Lab_1_Par_prog\\matrix2.txt");
+    writeMatrix(matrix1, "matrix1.txt");
+    writeMatrix(matrix2, "matrix2.txt");
 
-    std::vector<std::vector<int>> result = multiplyMatrices(matrix1, matrix2);
-
-    writeMatrix(result, "E:\\Projectы\\Lab_1_Par_prog\\result_matrix.txt");
-
+    std::vector<std::vector<int>> result;
+    auto start = std::chrono::high_resolution_clock::now();
+    result = multiplyMatricesFromFile("matrix1.txt", "matrix2.txt");
     auto end = std::chrono::high_resolution_clock::now();
+    writeMatrix(result, "result_matrix.txt");
     std::chrono::duration<double> duration = end - start;
 
     std::cout << "The scope of the task: " << rows1 * cols1 + rows2 * cols2 << " elements." << std::endl;
     std::cout << "Execution time: " << duration.count() << " seconds." << std::endl;
-
     return 0;
 }
